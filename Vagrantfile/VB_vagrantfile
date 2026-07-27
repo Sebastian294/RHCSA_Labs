@@ -1,0 +1,82 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/rocky9"
+
+  # =========================================================
+  # SCRIPT DE APROVISIONAMIENTO COMÚN PARA AMBAS MÁQUINAS
+  # =========================================================
+  $provision_script = <<-SCRIPT
+    echo "=== [1/5] Configurando Zona Horaria ==="
+    timedatectl set-timezone America/Montevideo
+
+    echo "=== [2/5] Configurando Resolución Local (/etc/hosts) ==="
+    cat <<EOF >> /etc/hosts
+192.168.56.10 server.rhcsa.lab server
+192.168.56.11 client.rhcsa.lab client
+EOF
+
+    echo "=== [3/5] Configurando SSH ==="
+    sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+    systemctl restart sshd
+    echo "root:redhat" | chpasswd
+    echo "vagrant:redhat" | chpasswd
+
+    echo "=== [4/5] Instalando Herramientas Base del Administrador ==="
+    dnf update -y
+    dnf install -y vim bash-completion man-pages tar net-tools bind-utils lsof tmux stratis-cli stratisd
+
+    echo "=== [5/5] Ajustes de Consola ==="
+    echo "alias vi=vim" >> /etc/profile
+  SCRIPT
+
+  # =========================================================
+  # VM 1: SERVER (Nodo Principal)
+  # =========================================================
+  config.vm.define "server" do |server|
+    server.vm.hostname = "server.rhcsa.lab"
+    
+    # Red Privada con IP Fija
+    server.vm.network "private_network", ip: "192.168.56.10"
+
+    server.vm.provider "virtualbox" do |vb|
+      vb.name = "rhcsa9_server"
+      vb.memory = "1024"
+      vb.cpus = 1
+      
+      file_to_disk = "./server_disk_25G.vdi"
+      unless File.exist?(file_to_disk)
+        vb.customize ['createhd', '--filename', file_to_disk, '--size', 25600]
+      end
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', file_to_disk]
+    end
+
+    server.vm.provision "shell", inline: $provision_script
+  end
+
+  # =========================================================
+  # VM 2: CLIENT (Nodo Secundario)
+  # =========================================================
+  config.vm.define "client" do |client|
+    client.vm.hostname = "client.rhcsa.lab"
+    
+    # Red Privada con IP Fija
+    client.vm.network "private_network", ip: "192.168.56.11"
+
+    client.vm.provider "virtualbox" do |vb|
+      vb.name = "rhcsa9_client"
+      vb.memory = "1024"
+      vb.cpus = 1
+      
+      file_to_disk_client = "./client_disk_25G.vdi"
+      unless File.exist?(file_to_disk_client)
+        vb.customize ['createhd', '--filename', file_to_disk_client, '--size', 25600]
+      end
+      vb.customize ['storageattach', :id, '--storagectl', 'SATA Controller', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', file_to_disk_client]
+    end
+
+    client.vm.provision "shell", inline: $provision_script
+  end
+end
