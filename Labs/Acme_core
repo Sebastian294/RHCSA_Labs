@@ -1,0 +1,67 @@
+Contexto Empresarial: Proyecto "Acme Core"
+La empresa Acme Corp está desplegando un nuevo servidor departamental. Tu tarea es configurar el servidor principal para alojar datos compartidos y un servicio web interno en un puerto no estándar, asegurando que los desarrolladores tengan el acceso correcto. El cliente se utilizará para validar la conectividad.
+
+Objetivos del Laboratorio
+1. Configuración de Red e Identidad
+
+En la VM 1, configura el hostname como server.acme.local y asígnale la IP estática 192.168.50.10/24.
+
+En la VM 2, configura el hostname como client.acme.local y asígnale la IP estática 192.168.50.20/24.
+
+Asegúrate de que ambas máquinas puedan comunicarse entre sí por IP.
+
+2. Gestión de Usuarios y Sudo
+
+En el server, crea un grupo llamado devops.
+
+Crea dos usuarios: admin1 y user1. Ambos deben pertenecer al grupo suplementario devops.
+
+Configura el sistema para que admin1 pueda ejecutar cualquier comando con sudo sin que se le solicite contraseña.
+
+3. Almacenamiento y LVM
+
+En el server, asumiendo que has agregado un nuevo disco (ej. 5GB), crea un Volume Group (VG) llamado vg_acme con un tamaño de Physical Extent (PE) de 8 MiB.
+
+Crea un Logical Volume (LV) llamado lv_datos que tenga un tamaño exacto de 50 extents.
+
+Formatea este volumen con el sistema de archivos xfs y móntalo de forma persistente en /datos_compartidos.
+
+4. Permisos, ACLs y Enlaces
+
+Cambia el grupo propietario del directorio /datos_compartidos a devops.
+
+Configura el directorio para que cualquier archivo o subdirectorio nuevo creado dentro herede automáticamente el grupo devops.
+
+Aplica Listas de Control de Acceso (ACLs) para garantizar que el usuario user1 tenga permisos de solo lectura (r-x) sobre el directorio y los nuevos archivos creados, mientras que el resto de los miembros del grupo devops mantienen acceso total.
+
+Crea un enlace simbólico en el directorio home de admin1 llamado acceso_datos que apunte a /datos_compartidos.
+
+5. Systemd, Servicios y SELinux
+
+Instala el servidor web Apache (httpd) en el server.
+
+Configura el servicio web para que escuche en el puerto no estándar 8282.
+
+Ajusta las políticas de SELinux para permitir que el servicio web funcione correctamente en ese puerto.
+
+Crea un archivo index.html básico en la raíz de documentos web que contenga el texto "Servidor Acme OK".
+
+Asegúrate de que el servicio httpd se inicie automáticamente en el arranque.
+
+6. Firewall
+
+Configura firewalld en el server para permitir el tráfico entrante de forma permanente en el puerto 8282/tcp.
+
+Valida desde el client usando curl que puedes ver el contenido del index.html.
+
+7. Tareas Programadas (Cron)
+
+En el server, configura un cron job para el usuario admin1 que se ejecute todos los días hábiles (lunes a viernes) a las 14:30.
+
+La tarea debe ejecutar el comando uptime y anexar su salida a un archivo en /datos_compartidos/registro_cargas.log.
+
+8. Búsqueda y Gestión de Logs
+
+Encuentra todos los archivos en el directorio /etc del server que pertenezcan al usuario root, tengan un tamaño mayor a 2 MB y guárdalos (cópialos) en /root/respaldos/.
+
+Busca en el sistema de logs (ej. journalctl o /var/log/secure) todos los eventos relacionados con el servicio sshd ocurridos en el día de hoy, y guarda esa salida en /root/auditoria_ssh.txt.
