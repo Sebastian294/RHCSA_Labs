@@ -1,67 +1,186 @@
-Contexto Empresarial: Proyecto "Acme Core"
-La empresa Acme Corp está desplegando un nuevo servidor departamental. Tu tarea es configurar el servidor principal para alojar datos compartidos y un servicio web interno en un puerto no estándar, asegurando que los desarrolladores tengan el acceso correcto. El cliente se utilizará para validar la conectividad.
+# Contexto Empresarial: Proyecto "Acme Core"
 
-Objetivos del Laboratorio
-1. Configuración de Red e Identidad
+La empresa **Acme Corp** está desplegando un nuevo servidor departamental. Tu tarea es configurar el servidor principal para alojar datos compartidos y un servicio web interno en un puerto no estándar, asegurando que los desarrolladores tengan el acceso correcto. El cliente se utilizará para validar la conectividad.
 
-En la VM 1, configura el hostname como server.acme.local y asígnale la IP estática 192.168.50.10/24.
+---
 
-En la VM 2, configura el hostname como client.acme.local y asígnale la IP estática 192.168.50.20/24.
+# Objetivos del Laboratorio
 
-Asegúrate de que ambas máquinas puedan comunicarse entre sí por IP.
+## 1. Configuración de Red e Identidad
 
-2. Gestión de Usuarios y Sudo
+### Servidor (VM 1)
 
-En el server, crea un grupo llamado devops.
+- Configurar el hostname como:
+  - `server.acme.local`
+- Asignar la IP estática:
+  - `192.168.50.10/24`
 
-Crea dos usuarios: admin1 y user1. Ambos deben pertenecer al grupo suplementario devops.
+### Cliente (VM 2)
 
-Configura el sistema para que admin1 pueda ejecutar cualquier comando con sudo sin que se le solicite contraseña.
+- Configurar el hostname como:
+  - `client.acme.local`
+- Asignar la IP estática:
+  - `192.168.50.20/24`
 
-3. Almacenamiento y LVM
+### Validación
 
-En el server, asumiendo que has agregado un nuevo disco (ej. 5GB), crea un Volume Group (VG) llamado vg_acme con un tamaño de Physical Extent (PE) de 8 MiB.
+- Verificar que ambas máquinas puedan comunicarse entre sí mediante sus direcciones IP.
 
-Crea un Logical Volume (LV) llamado lv_datos que tenga un tamaño exacto de 50 extents.
+---
 
-Formatea este volumen con el sistema de archivos xfs y móntalo de forma persistente en /datos_compartidos.
+## 2. Gestión de Usuarios y Sudo
 
-4. Permisos, ACLs y Enlaces
+En el **server**:
 
-Cambia el grupo propietario del directorio /datos_compartidos a devops.
+- Crear el grupo:
+  - `devops`
 
-Configura el directorio para que cualquier archivo o subdirectorio nuevo creado dentro herede automáticamente el grupo devops.
+- Crear los usuarios:
+  - `admin1`
+  - `user1`
 
-Aplica Listas de Control de Acceso (ACLs) para garantizar que el usuario user1 tenga permisos de solo lectura (r-x) sobre el directorio y los nuevos archivos creados, mientras que el resto de los miembros del grupo devops mantienen acceso total.
+- Ambos usuarios deben pertenecer al grupo suplementario:
+  - `devops`
 
-Crea un enlace simbólico en el directorio home de admin1 llamado acceso_datos que apunte a /datos_compartidos.
+- Configurar el sistema para que:
+  - `admin1` pueda ejecutar cualquier comando mediante `sudo` **sin solicitar contraseña**.
 
-5. Systemd, Servicios y SELinux
+---
 
-Instala el servidor web Apache (httpd) en el server.
+## 3. Almacenamiento y LVM
 
-Configura el servicio web para que escuche en el puerto no estándar 8282.
+En el **server**, asumiendo que se agregó un nuevo disco (por ejemplo, **5 GB**):
 
-Ajusta las políticas de SELinux para permitir que el servicio web funcione correctamente en ese puerto.
+1. Crear un **Volume Group (VG)**:
+   - Nombre: `vg_acme`
+   - Physical Extent (PE): **8 MiB**
 
-Crea un archivo index.html básico en la raíz de documentos web que contenga el texto "Servidor Acme OK".
+2. Crear un **Logical Volume (LV)**:
+   - Nombre: `lv_datos`
+   - Tamaño: **50 extents**
 
-Asegúrate de que el servicio httpd se inicie automáticamente en el arranque.
+3. Formatear el volumen con:
+   - Sistema de archivos: `xfs`
 
-6. Firewall
+4. Montarlo de forma persistente en:
+   - `/datos_compartidos`
 
-Configura firewalld en el server para permitir el tráfico entrante de forma permanente en el puerto 8282/tcp.
+---
 
-Valida desde el client usando curl que puedes ver el contenido del index.html.
+## 4. Permisos, ACLs y Enlaces
 
-7. Tareas Programadas (Cron)
+En el **server**:
 
-En el server, configura un cron job para el usuario admin1 que se ejecute todos los días hábiles (lunes a viernes) a las 14:30.
+- Cambiar el grupo propietario del directorio:
+  - `/datos_compartidos`
+  - Grupo: `devops`
 
-La tarea debe ejecutar el comando uptime y anexar su salida a un archivo en /datos_compartidos/registro_cargas.log.
+- Configurar el directorio para que todos los archivos y subdirectorios nuevos hereden automáticamente el grupo `devops`.
 
-8. Búsqueda y Gestión de Logs
+- Configurar **ACLs** para que:
+  - `user1` tenga permisos de **solo lectura y ejecución (`r-x`)** sobre el directorio y sobre los nuevos archivos creados.
+  - El resto de los miembros del grupo `devops` mantenga acceso completo.
 
-Encuentra todos los archivos en el directorio /etc del server que pertenezcan al usuario root, tengan un tamaño mayor a 2 MB y guárdalos (cópialos) en /root/respaldos/.
+- Crear un enlace simbólico:
 
-Busca en el sistema de logs (ej. journalctl o /var/log/secure) todos los eventos relacionados con el servicio sshd ocurridos en el día de hoy, y guarda esa salida en /root/auditoria_ssh.txt.
+| Ubicación | Nombre | Destino |
+|-----------|--------|---------|
+| `/home/admin1` | `acceso_datos` | `/datos_compartidos` |
+
+---
+
+## 5. Systemd, Servicios y SELinux
+
+En el **server**:
+
+- Instalar el servidor web Apache (`httpd`).
+
+- Configurar Apache para escuchar en el puerto:
+
+  - `8282`
+
+- Ajustar las políticas de **SELinux** para permitir el funcionamiento del servicio en ese puerto.
+
+- Crear un archivo:
+
+  - `index.html`
+
+- Ubicarlo en la raíz de documentos del servidor web con el siguiente contenido:
+
+```html
+Servidor Acme OK
+```
+
+- Configurar el servicio `httpd` para que:
+  - Se inicie automáticamente al arrancar el sistema.
+
+---
+
+## 6. Firewall
+
+En el **server**:
+
+- Configurar **firewalld** para permitir permanentemente el tráfico entrante hacia:
+
+```
+8282/tcp
+```
+
+### Validación
+
+Desde el **client**, utilizar `curl` para verificar que puede visualizar el contenido de `index.html`.
+
+---
+
+## 7. Tareas Programadas (Cron)
+
+En el **server**:
+
+Crear un **cron job** para el usuario `admin1` que:
+
+- Se ejecute:
+  - De lunes a viernes.
+  - A las **14:30**.
+
+- Ejecute el comando:
+
+```bash
+uptime
+```
+
+- Agregue (append) la salida al archivo:
+
+```
+/datos_compartidos/registro_cargas.log
+```
+
+---
+
+## 8. Búsqueda y Gestión de Logs
+
+### Respaldo de archivos
+
+Buscar todos los archivos dentro de:
+
+```
+/etc
+```
+
+que cumplan las siguientes condiciones:
+
+- Propietario: `root`
+- Tamaño mayor a **2 MB**
+
+Copiarlos al directorio:
+
+```
+/root/respaldos/
+```
+
+### Auditoría SSH
+
+Buscar todos los eventos relacionados con el servicio **sshd** ocurridos durante el día de hoy (utilizando `journalctl` o `/var/log/secure`) y guardar la salida en:
+
+```
+/root/auditoria_ssh.txt
+```
