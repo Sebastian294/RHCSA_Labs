@@ -42,6 +42,7 @@ EOF
 
     server.vm.provider :libvirt do |libvirt|
       libvirt.memory = 1024
+      libvirt.driver = "qemu"
       libvirt.cpus = 1
       
       # En KVM, usamos qcow2 y el bus virtio (idéntico al examen real)
@@ -59,6 +60,7 @@ EOF
     client.vm.network "private_network", ip: "192.168.56.11"
 
     client.vm.provider :libvirt do |libvirt|
+      libvirt.driver = "qemu"
       libvirt.memory = 1024
       libvirt.cpus = 1
       
@@ -69,3 +71,4 @@ EOF
     client.vm.provision "shell", inline: $provision_script
   end
 end
+
